@@ -1,0 +1,2231 @@
+{
+  "name": "FPM - Procesamiento de consultas",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "airtableTokenApi",
+        "baseId": {
+          "__rl": true,
+          "value": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS/viw74WLV2m5B8352O?blocks=hide",
+          "mode": "url"
+        },
+        "tableId": {
+          "__rl": true,
+          "value": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS/viw74WLV2m5B8352O?blocks=hide",
+          "mode": "url"
+        },
+        "triggerField": "Creado en",
+        "additionalFields": {
+          "fields": "Mensaje original,ID,Canal,Creado en,Responsable,Cliente o empresa,Email cliente,Email responsable"
+        }
+      },
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6ee20418-35f6-4291-b3eb-b081705dc060",
+      "name": "Airtable Trigger",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.fields[\"Mensaje original\"] }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"categoria\": \"Identificación\",\n  \"subcategoria\": \"Código ambiguo o descripción incompleta\",\n  \"codigos_detectados\": [\"5.145\"],\n  \"codigos_normalizados\": [\"5145\"],\n  \"aplicacion_vehiculo\": \"\",\n  \"producto_detectado\": \"Embrague bidisco\",\n  \"dato_tecnico_solicitado\": \"\",\n  \"requiere_lista_precios\": true,\n  \"requiere_catalogo\": true,\n  \"requiere_revision_humana\": true,\n  \"prioridad\": \"Normal\",\n  \"datos_faltantes\": [\"Confirmar el código o enviar una foto del producto\"],\n  \"accion_recomendada\": \"Solicitar confirmación del código antes de cotizar\"\n}",
+        "options": {
+          "systemPromptTemplate": "Actuás como analista interno de consultas técnico-comerciales de FPM, empresa dedicada a embragues, discos y componentes para maquinaria agrícola y vehículos.\n\nTu tarea es extraer información del mensaje recibido, sin inventar productos, aplicaciones, códigos, precios, disponibilidad ni datos técnicos.\n\nCategorías permitidas:\n- Cotización\n- Disponibilidad\n- Identificación\n- Consulta técnica\n- Negociación comercial\n- Reclamo\n- Estado de pedido\n- Otro\n\nReglas:\n1. Conservá en codigos_detectados los códigos exactamente como fueron escritos por el cliente.\n2. En codigos_normalizados eliminá espacios, puntos y guiones utilizados solamente como separadores.\n3. No corrijas automáticamente un código dudoso ni lo reemplaces por uno parecido.\n4. Si falta información para identificar el producto, indicá los datos faltantes y marcá requiere_revision_humana como true.\n5. Las negociaciones, reclamos y consultas técnicas dudosas siempre requieren revisión humana.\n6. No confirmes stock. Una lista de precios no demuestra disponibilidad.\n7. No inventes una aplicación o modelo cuando no figure claramente en el mensaje.\n8. Usá prioridad Alta solamente para reclamos, urgencias explícitas o situaciones críticas.\n9. Si un campo no aparece en el mensaje, devolvé una cadena vacía o una lista vacía, según corresponda.\n10. La accion_recomendada debe ser breve, concreta y segura.\n11. Si el mensaje contiene un código, una descripción de producto o una aplicación que debe validarse, requiere_catalogo debe ser true.\n\n12. requiere_lista_precios debe ser true solamente cuando el cliente pida precio, cotización, presupuesto, cuánto cuesta o cuánto está.\n\n13. En datos_faltantes incluí como máximo tres datos concretos y realmente necesarios. No agregues una lista excesiva de especificaciones.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9fe017d5-5beb-4c4e-81a1-2adba685fc1d",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        208
+      ],
+      "id": "b740a24e-38ef-48be-b97b-a90d7e9a7ea5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8EBjvPnoAP4HAHe7",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Airtable Trigger').item.json.id }}",
+            "Categoría principal": "={{ $json.output.categoria }}",
+            "Subcategoría": "={{ $json.output.subcategoria }}",
+            "Códigos detectados": "={{ $json.output.codigos_detectados.join(' | ') }}",
+            "Aplicación / vehículo": "={{ $json.output.aplicacion_vehiculo }}",
+            "Producto detectado": "={{ $json.output.producto_detectado }}",
+            "Dato técnico solicitado": "={{ $json.output.dato_tecnico_solicitado }}",
+            "Requiere lista de precios": "={{ $json.output.requiere_lista_precios ? 'Sí' : 'No' }}",
+            "Requiere catálogo": "={{ $json.output.requiere_catalogo ? 'Sí' : 'No' }}",
+            "Aprobación humana": "={{ $json.output.requiere_revision_humana ? 'Sí' : 'No' }}",
+            "Prioridad": "={{ $json.output.prioridad }}",
+            "Datos faltantes": "={{ $json.output.datos_faltantes.join('\\n') }}",
+            "Respuesta propuesta IA": "={{ $json.output.accion_recomendada }}",
+            "Estado": "Revisión humana",
+            "Aprobación Gonzalo": "pendiente"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha y hora",
+              "displayName": "Fecha y hora",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Canal",
+              "displayName": "Canal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje original",
+              "displayName": "Mensaje original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría principal",
+              "displayName": "Categoría principal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subcategoría",
+              "displayName": "Subcategoría",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Códigos detectados",
+              "displayName": "Códigos detectados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aplicación / vehículo",
+              "displayName": "Aplicación / vehículo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Producto detectado",
+              "displayName": "Producto detectado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dato técnico solicitado",
+              "displayName": "Dato técnico solicitado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Acción automática propuesta",
+              "displayName": "Acción automática propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere lista de precios",
+              "displayName": "Requiere lista de precios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere catálogo",
+              "displayName": "Requiere catálogo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación humana",
+              "displayName": "Aprobación humana",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Responsable",
+              "displayName": "Responsable",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prioridad",
+              "displayName": "Prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente o empresa",
+              "displayName": "Cliente o empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Teléfono",
+              "displayName": "Teléfono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Coincidencias encontradas",
+              "displayName": "Coincidencias encontradas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precios encontrados",
+              "displayName": "Precios encontrados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Datos faltantes",
+              "displayName": "Datos faltantes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta propuesta IA",
+              "displayName": "Respuesta propuesta IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación Gonzalo",
+              "displayName": "Aprobación Gonzalo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "pendiente",
+                  "value": "pendiente"
+                },
+                {
+                  "name": "aprobada",
+                  "value": "aprobada"
+                },
+                {
+                  "name": "rechazada",
+                  "value": "rechazada"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta final",
+              "displayName": "Respuesta final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Error técnico",
+              "displayName": "Error técnico",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Creado en",
+              "displayName": "Creado en",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "1f4e33aa-697c-45fc-b773-d64bf6ceb930",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1cd294d2-c19c-4e76-85be-76fe890e5dd4",
+              "leftValue": "={{ $('Information Extractor').item.json.output.codigos_normalizados.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        0
+      ],
+      "id": "69a19c9f-c900-4644-ad1e-ecef0f219ed2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblX2YB47POfcM9Ze",
+          "mode": "list",
+          "cachedResultName": "Productos",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblX2YB47POfcM9Ze"
+        },
+        "filterByFormula": "={{ `AND(OR({Código interno normalizado}=\"${$('Information Extractor').item.json.output.codigos_normalizados[0]}\",{Código consultado}=\"${$('Information Extractor').item.json.output.codigos_detectados[0]}\",{Código consultado}=\"${$('Information Extractor').item.json.output.codigos_normalizados[0]}\",{Nº original}=\"${$('Information Extractor').item.json.output.codigos_normalizados[0]}\"),{Estado del precio}!=\"No encontrado / ambiguo\")` }}",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        -96
+      ],
+      "id": "2e6fee52-5c0e-4a6e-a9bc-79f237b3f287",
+      "name": "Search records",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3141c379-ed5d-4516-a101-07e81c8c107a",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -96
+      ],
+      "id": "95e4eb18-c056-4c4f-81cc-552dccc3b4ea",
+      "name": "¿Producto encontrado?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Airtable Trigger').first().json.id }}",
+            "Coincidencias encontradas": "Sin coincidencia válida en el catálogo",
+            "Precios encontrados": "No disponible",
+            "Respuesta propuesta IA": "={{ `Hola, no me aparece una coincidencia válida para el código ${$('Information Extractor').first().json.output.codigos_detectados.join(' | ')}. ¿Podés confirmarme el número o enviarme una foto del producto? Prefiero validarlo antes de cotizarte.` }}",
+            "Estado": "Revisión humana",
+            "Aprobación Gonzalo": "pendiente"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha y hora",
+              "displayName": "Fecha y hora",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Canal",
+              "displayName": "Canal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje original",
+              "displayName": "Mensaje original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría principal",
+              "displayName": "Categoría principal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subcategoría",
+              "displayName": "Subcategoría",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Códigos detectados",
+              "displayName": "Códigos detectados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aplicación / vehículo",
+              "displayName": "Aplicación / vehículo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Producto detectado",
+              "displayName": "Producto detectado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dato técnico solicitado",
+              "displayName": "Dato técnico solicitado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Acción automática propuesta",
+              "displayName": "Acción automática propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere lista de precios",
+              "displayName": "Requiere lista de precios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere catálogo",
+              "displayName": "Requiere catálogo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación humana",
+              "displayName": "Aprobación humana",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Responsable",
+              "displayName": "Responsable",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prioridad",
+              "displayName": "Prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente o empresa",
+              "displayName": "Cliente o empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Teléfono",
+              "displayName": "Teléfono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Coincidencias encontradas",
+              "displayName": "Coincidencias encontradas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precios encontrados",
+              "displayName": "Precios encontrados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Datos faltantes",
+              "displayName": "Datos faltantes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta propuesta IA",
+              "displayName": "Respuesta propuesta IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación Gonzalo",
+              "displayName": "Aprobación Gonzalo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "pendiente",
+                  "value": "pendiente"
+                },
+                {
+                  "name": "aprobada",
+                  "value": "aprobada"
+                },
+                {
+                  "name": "rechazada",
+                  "value": "rechazada"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta final",
+              "displayName": "Respuesta final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Error técnico",
+              "displayName": "Error técnico",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Creado en",
+              "displayName": "Creado en",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "0a94c8c4-3b9d-42a5-810d-642875130e0a",
+      "name": "Guardar respuesta - producto no encontrado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Airtable Trigger').first().json.id }}",
+            "Estado": "Revisión humana",
+            "Coincidencias encontradas": "={{ [\n  $json.fields['Código interno normalizado'],\n  $json.fields['Código consultado'],\n  $json.fields['Nº original'],\n  $json.fields['Descripción validada'],\n  $json.fields['Aplicación / línea']\n].filter(Boolean).join(' | ') }}",
+            "Precios encontrados": "={{ ($json.fields['Moneda'] || 'ARS') + ' ' + ($json.fields['Precio lista'] ?? $json.fields['Precio de lista'] ?? $json.fields['Precio'] ?? 'Precio a confirmar') }}",
+            "Respuesta propuesta IA": "={{ `Hola, el código ${$('Information Extractor').first().json.output.codigos_detectados.join(' | ')} corresponde a ${$json.fields['Descripción validada'] || $json.fields['Producto'] || 'un producto identificado en el catálogo'}${$json.fields['Aplicación / línea'] ? `, aplicación ${$json.fields['Aplicación / línea']}` : ''}. Precio de lista: ${$json.fields['Moneda'] || 'ARS'} ${$json.fields['Precio lista'] ?? $json.fields['Precio de lista'] ?? $json.fields['Precio'] ?? 'a confirmar'}. La disponibilidad y las condiciones comerciales quedan sujetas a revisión.` }}",
+            "Aprobación Gonzalo": "pendiente"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fecha y hora",
+              "displayName": "Fecha y hora",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Canal",
+              "displayName": "Canal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje original",
+              "displayName": "Mensaje original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Categoría principal",
+              "displayName": "Categoría principal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Subcategoría",
+              "displayName": "Subcategoría",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Códigos detectados",
+              "displayName": "Códigos detectados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aplicación / vehículo",
+              "displayName": "Aplicación / vehículo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Producto detectado",
+              "displayName": "Producto detectado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dato técnico solicitado",
+              "displayName": "Dato técnico solicitado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Acción automática propuesta",
+              "displayName": "Acción automática propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Requiere lista de precios",
+              "displayName": "Requiere lista de precios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Requiere catálogo",
+              "displayName": "Requiere catálogo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobación humana",
+              "displayName": "Aprobación humana",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Responsable",
+              "displayName": "Responsable",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Prioridad",
+              "displayName": "Prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente o empresa",
+              "displayName": "Cliente o empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Teléfono",
+              "displayName": "Teléfono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Coincidencias encontradas",
+              "displayName": "Coincidencias encontradas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precios encontrados",
+              "displayName": "Precios encontrados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Datos faltantes",
+              "displayName": "Datos faltantes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Respuesta propuesta IA",
+              "displayName": "Respuesta propuesta IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación Gonzalo",
+              "displayName": "Aprobación Gonzalo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "pendiente",
+                  "value": "pendiente"
+                },
+                {
+                  "name": "aprobada",
+                  "value": "aprobada"
+                },
+                {
+                  "name": "rechazada",
+                  "value": "rechazada"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta final",
+              "displayName": "Respuesta final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Error técnico",
+              "displayName": "Error técnico",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Creado en",
+              "displayName": "Creado en",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        -192
+      ],
+      "id": "9c10dadd-f1d4-4e2d-8b22-d23a8e90907f",
+      "name": "Guardar respuesta - producto encontrado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "Producto vinculado": "={{ $('Search records').all().map(item => item.json.id) }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha y hora",
+              "displayName": "Fecha y hora",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Canal",
+              "displayName": "Canal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje original",
+              "displayName": "Mensaje original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría principal",
+              "displayName": "Categoría principal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Subcategoría",
+              "displayName": "Subcategoría",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Códigos detectados",
+              "displayName": "Códigos detectados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aplicación / vehículo",
+              "displayName": "Aplicación / vehículo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Producto detectado",
+              "displayName": "Producto detectado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dato técnico solicitado",
+              "displayName": "Dato técnico solicitado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Acción automática propuesta",
+              "displayName": "Acción automática propuesta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere lista de precios",
+              "displayName": "Requiere lista de precios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Requiere catálogo",
+              "displayName": "Requiere catálogo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación humana",
+              "displayName": "Aprobación humana",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Responsable",
+              "displayName": "Responsable",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Prioridad",
+              "displayName": "Prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Revisión humana",
+                  "value": "Revisión humana"
+                },
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Requiere corrección",
+                  "value": "Requiere corrección"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente o empresa",
+              "displayName": "Cliente o empresa",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Teléfono",
+              "displayName": "Teléfono",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Coincidencias encontradas",
+              "displayName": "Coincidencias encontradas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precios encontrados",
+              "displayName": "Precios encontrados",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Datos faltantes",
+              "displayName": "Datos faltantes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta propuesta IA",
+              "displayName": "Respuesta propuesta IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobación Gonzalo",
+              "displayName": "Aprobación Gonzalo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "pendiente",
+                  "value": "pendiente"
+                },
+                {
+                  "name": "aprobada",
+                  "value": "aprobada"
+                },
+                {
+                  "name": "rechazada",
+                  "value": "rechazada"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Respuesta final",
+              "displayName": "Respuesta final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Error técnico",
+              "displayName": "Error técnico",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Creado en",
+              "displayName": "Creado en",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Modificado aprobación Gonzalo",
+              "displayName": "Modificado aprobación Gonzalo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ultima_modificacion_aprobacion",
+              "displayName": "Ultima_modificacion_aprobacion",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Producto vinculado",
+              "displayName": "Producto vinculado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Código consultado (from Producto vinculado)",
+              "displayName": "Código consultado (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Código interno normalizado (from Producto vinculado)",
+              "displayName": "Código interno normalizado (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nº original (from Producto vinculado)",
+              "displayName": "Nº original (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Marca (from Producto vinculado)",
+              "displayName": "Marca (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Descripción validada (from Producto vinculado)",
+              "displayName": "Descripción validada (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Aplicación / línea (from Producto vinculado)",
+              "displayName": "Aplicación / línea (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Medidas / características (from Producto vinculado)",
+              "displayName": "Medidas / características (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Precio lista (from Producto vinculado)",
+              "displayName": "Precio lista (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Moneda (from Producto vinculado)",
+              "displayName": "Moneda (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Estado del precio (from Producto vinculado)",
+              "displayName": "Estado del precio (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Resultado automático esperado (from Producto vinculado)",
+              "displayName": "Resultado automático esperado (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nivel de confianza (from Producto vinculado)",
+              "displayName": "Nivel de confianza (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Fuente precio (from Producto vinculado)",
+              "displayName": "Fuente precio (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Página precio (from Producto vinculado)",
+              "displayName": "Página precio (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Fuente catálogo (from Producto vinculado)",
+              "displayName": "Fuente catálogo (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Página catálogo (from Producto vinculado)",
+              "displayName": "Página catálogo (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Observación (from Producto vinculado)",
+              "displayName": "Observación (from Producto vinculado)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        -192
+      ],
+      "id": "e0a3e31f-8d17-4161-8852-780910d6cb21",
+      "name": "Vincular producto encontrado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.fields[\"Email responsable\"] }}",
+        "subject": "={{ 'Consulta ' + $json.fields[\"ID\"] + ' pendiente de aprobación' }}",
+        "emailType": "text",
+        "message": "={{ `Hola Gonzalo:\n\nLa consulta ${$json.fields[\"ID\"]} fue procesada por el Asistente Comercial IA y está esperando tu aprobación.\n\nCliente o empresa:\n${$json.fields[\"Cliente o empresa\"] || \"No informado\"}\n\nMensaje original:\n${$json.fields[\"Mensaje original\"]}\n\nCódigo detectado:\n${$json.fields[\"Códigos detectados\"] || \"No detectado\"}\n\nCoincidencias encontradas:\n${$json.fields[\"Coincidencias encontradas\"] || \"Sin coincidencias\"}\n\nRespuesta propuesta por IA:\n${$json.fields[\"Respuesta propuesta IA\"] || \"No disponible\"}\n\nIngresá en la Bandeja de aprobación comercial FPM para revisar la consulta.\n\nMensaje automático del ecosistema FPM – Asistente Comercial IA.` }}",
+        "options": {
+          "senderName": "FPM - Asistente Comercial IA"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        -192
+      ],
+      "id": "7136211f-6e5e-4431-a908-9e4d14c3e6be",
+      "name": "Notificar aprobación - producto encontrado",
+      "webhookId": "6d7a2a0f-2a3c-4493-8f4d-06f50664aa60",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Cf6CSpNUjYJgGR39",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "filterByFormula": "={{ \"RECORD_ID()='\" + $json.id + \"'\" }}",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        -48
+      ],
+      "id": "247b3e19-8331-4184-b58d-7858016676ee",
+      "name": "Recuperar consulta para notificación",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appsNEz6AbEnKyLmx",
+          "mode": "list",
+          "cachedResultName": "FPM – Asistente Comercial IA",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblaNFfXEA8uHYOpS",
+          "mode": "list",
+          "cachedResultName": "Consultas",
+          "cachedResultUrl": "https://airtable.com/appsNEz6AbEnKyLmx/tblaNFfXEA8uHYOpS"
+        },
+        "filterByFormula": "={{ \"RECORD_ID()='\" + $json.id + \"'\" }}",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        128
+      ],
+      "id": "69bb2c9f-9763-4bc0-82af-b89a6319569e",
+      "name": "Recuperar consulta no encontrada para notificación",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "bnSg0Tw3NiLGKjcn",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.fields[\"Email responsable\"] }}",
+        "subject": "={{ 'Consulta ' + $json.fields[\"ID\"] + ' sin coincidencia - requiere revisión' }}",
+        "emailType": "text",
+        "message": "={{ `Hola Gonzalo:\n\nLa consulta ${$json.fields[\"ID\"]} fue procesada por el Asistente Comercial IA, pero no se encontró una coincidencia válida en el catálogo.\n\nCliente o empresa:\n${$json.fields[\"Cliente o empresa\"] || \"No informado\"}\n\nMensaje original:\n${$json.fields[\"Mensaje original\"]}\n\nCódigo detectado:\n${$json.fields[\"Códigos detectados\"] || \"No detectado\"}\n\nDatos faltantes:\n${$json.fields[\"Datos faltantes\"] || \"No informados\"}\n\nRespuesta propuesta por IA:\n${$json.fields[\"Respuesta propuesta IA\"] || \"No disponible\"}\n\nIngresá en la Bandeja de aprobación comercial FPM para revisar la consulta y decidir si debe aprobarse o corregirse.\n\nMensaje automático del ecosistema FPM – Asistente Comercial IA.` }}",
+        "options": {
+          "senderName": "FPM - Asistente Comercial IA"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1728,
+        -16
+      ],
+      "id": "edd0a7ba-9ff3-415a-835c-fb7543935e97",
+      "name": "Notificar aprobación - producto no encontrado",
+      "webhookId": "6d7a2a0f-2a3c-4493-8f4d-06f50664aa60",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Cf6CSpNUjYJgGR39",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Airtable Trigger": [
+      {
+        "json": {
+          "id": "recHX5xOOPI77Zzis",
+          "createdTime": "2026-07-20T11:44:27.000Z",
+          "fields": {
+            "Mensaje original": "hola, me cotizas 111",
+            "ID": "test-gmail-aprobada-4",
+            "Canal": "WhatsApp",
+            "Creado en": "2026-07-20T11:44:27.000Z",
+            "Cliente o empresa": "Cliente prueba Gmail",
+            "Responsable": "Gonzalo"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Airtable Trigger": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "¿Producto encontrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Producto encontrado?": {
+      "main": [
+        [
+          {
+            "node": "Guardar respuesta - producto encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Guardar respuesta - producto no encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar respuesta - producto no encontrado": {
+      "main": [
+        [
+          {
+            "node": "Recuperar consulta no encontrada para notificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar respuesta - producto encontrado": {
+      "main": [
+        [
+          {
+            "node": "Vincular producto encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vincular producto encontrado": {
+      "main": [
+        [
+          {
+            "node": "Recuperar consulta para notificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperar consulta para notificación": {
+      "main": [
+        [
+          {
+            "node": "Notificar aprobación - producto encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperar consulta no encontrada para notificación": {
+      "main": [
+        [
+          {
+            "node": "Notificar aprobación - producto no encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "9880f8bd-1e14-471a-bba8-f65fa3c5b07f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cbe3708d53bf335a9f395447aa443e5910d3b5740ab81fd16c0b7bf37ca2bd7"
+  },
+  "nodeGroups": [],
+  "id": "07mmR0bmeP9hSRi1",
+  "tags": []
+}
